@@ -1,9 +1,10 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import pickle
 import numpy as np
 import os
-from typing import Literal
+from typing import Literal, Dict
 
 app = FastAPI(
     title="Maternal Health Risk API",
@@ -11,7 +12,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Validasi path model
+# Setup CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Ganti dengan domain Next.js Anda di production
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Load models
 model_paths = {
     'hr': 'Clr/HRiskClr.sav',
     'ml': 'Clr/MLRiskClr.sav'
@@ -20,13 +30,9 @@ model_paths = {
 for path in model_paths.values():
     if not os.path.exists(path):
         raise FileNotFoundError(f"Model file not found: {path}")
-
-try:
-    # Load models
-    hrmodel = pickle.load(open(model_paths['hr'], 'rb'))
-    mlrmodel = pickle.load(open(model_paths['ml'], 'rb'))
-except Exception as e:
-    raise Exception(f"Error loading models: {str(e)}")
+        
+hrmodel = pickle.load(open(model_paths['hr'], 'rb'))
+mlrmodel = pickle.load(open(model_paths['ml'], 'rb'))
 
 class HealthData(BaseModel):
     Age: float = Field(..., ge=13, le=60, description="Usia ibu hamil (13-60 tahun)")
@@ -49,9 +55,9 @@ class HealthData(BaseModel):
         }
 
 class HealthRiskResponse(BaseModel):
-    risk_level: Literal["high risk", "mid risk", "low risk"]
+    risk_level: str
     features: HealthData
-    recommendations: dict
+    recommendations: Dict
 
 def get_recommendations(risk_level: str) -> dict:
     recommendations = {

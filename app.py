@@ -141,7 +141,7 @@ if submitted:
     
     try:
         # Make prediction request to API
-        response = requests.post("http://localhost:8000/predict", json=data)
+        response = requests.post("https://dayattttt2444-maternal-health-risk.hf.space/predict", json=data)
         result = response.json()
         
         # Display results
